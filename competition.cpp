@@ -39,6 +39,38 @@ void setup()
 
 }
 
+//Some sort of calibration concept
+//much rough
+
+void calibrateSensor() {
+  float avgSensor1 = 0;
+  float avgSensor2 = 0;
+  float avgSensor3 = 0;
+  int caltime = 5000;
+  while caltime > 0 {
+    float sensor1 = analogRead(pin);
+    float sensor2 = analogRead(pin);
+    float sensor3 = analogRead(pin);
+    avgSensor1 = avgSensor1 + sensor1;
+    avgSensor2 = avgSensor2 + sensor2;
+    avgSensor3 = avgSensor3 + sensor3;
+    moveforward(250);
+    caltime = caltime - 250;
+  }
+  float avgWhite = (avgSensor1 + avgSensor2 + avgSensor3) / 3
+  avgSensor1 = 0;
+  avgSensor2 = 0;
+  avgSensor3 = 0;
+  caltime = 5000;
+}
+
+void testDecision() {
+  if sensor1 >= avgWhite {
+    turnRight;
+  }
+}/////////////
+
+
 void loop() 
 {
   digitalWrite(enableLeft, 255);
