@@ -9,6 +9,11 @@ int trigPin = 11;
 int val1 = A0;
 int val2 = A1;
 int val3 = A2;
+float avgSensor1 = 0;
+float avgSensor2 = 0;
+float avgSensor3 = 0;
+float avgSensorWhite = 0;
+int calTime = 100;
 
 //Left Motor 
 int enableLeft = 8;  
@@ -42,34 +47,25 @@ void setup()
 //Some sort of calibration concept
 //much rough
 
-void calibrateSensor() {
-  float avgSensor1 = 0;
-  float avgSensor2 = 0;
-  float avgSensor3 = 0;
-  int caltime = 5000;
-  while caltime > 0 {
-    float sensor1 = analogRead(pin);
-    float sensor2 = analogRead(pin);
-    float sensor3 = analogRead(pin);
-    avgSensor1 = avgSensor1 + sensor1;
-    avgSensor2 = avgSensor2 + sensor2;
-    avgSensor3 = avgSensor3 + sensor3;
-    moveforward(250);
-    caltime = caltime - 250;
+void calibrateSensor() 
+{
+  while calTime > 0 {
+    digitalWrite(enableLeft, 255);
+    digitalWrite(enableRight, 255);
+    avgSensor1 += analogRead(val1);
+    avgSensor2 += analogRead(val2);
+    avgSensor3 += analogRead(val3);
+    forward();
+    calTime -= 1;
   }
-  float avgWhite = (avgSensor1 + avgSensor2 + avgSensor3) / 3
+  avgSensorWhite = (avgSensor1 + avgSensor2 + avgSensor3) / 3
+  Serial.print("Average White Value: ");
+  Serial.println(avgSensorWhite);
   avgSensor1 = 0;
   avgSensor2 = 0;
   avgSensor3 = 0;
-  caltime = 5000;
+  calTime = 100;
 }
-
-void testDecision() {
-  if sensor1 >= avgWhite {
-    turnRight;
-  }
-}/////////////
-
 
 void loop() 
 {
@@ -79,11 +75,11 @@ void loop()
   sensors();
 
   //Challenge 1: Running The Fairway
-  if(val1 >= 100)
+  if(val1 >= avgSensorWhite);
   {
     turn_right();
   }
-  else if (val3 >= 100)
+  else if (val3 >= avgSensorWhite)
   {
     turn_left();
   }
