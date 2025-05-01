@@ -53,6 +53,17 @@ void loop() {
   centerVal = analogRead(center);
   rightVal = analogRead(right);
 
+  // Print the sensor readings for debugging
+  Serial.print("Line Counter: ");
+  Serial.print(lineCounter);
+  Serial.print(" Position: (");
+  Serial.print(leftVal);
+  Serial.print(", ");
+  Serial.print(centerVal);
+  Serial.print(", ");
+  Serial.print(rightVal);
+  Serial.print(") ");
+
   buttonState = digitalRead(12);
   if (buttonState == HIGH && previousState == LOW) {
     pressStartTime = millis();
