@@ -1,200 +1,161 @@
-// CETA 2025
-// Code from Devious Birds
-// Made by Abir Khaund-Hazarika(a_beer), Aaron Chan, Minh Dang, Darvin Gutierrez
-// Challenge 1: Running The Fairway
-// Circuit diagram @ https://wokwi.com/projects/428782660635648001
+// CETA 2025 
+// Code from Devious Birds 
+// Made by Abir Khaund-Hazarika(a_beer), Aaron Chan, Minh Dang, Darvin Gutierrez 
+// Challenge 1: Running The Fairway 
+// Circuit diagram @ https://wokwi.com/projects/428782660635648001 
 // Using L293D motor driver with QRE1113 IR Sensors and HC-05 Distance Sensor
 
-// IR Sensor Pins for detecting line position
-#define left A0     // Left sensor
-#define center A1   // Center sensor
-#define right A2    // Right sensor
-
-// Variables to hold sensor values
-int leftVal, centerVal, rightVal;
-// Variables for calibration of sensors
-int avgSensorLeft = 0, avgSensorCenter = 0, avgSensorRight = 0;
-int avgWhite = 0;  // The average value of the sensor when it detects white
-int calTime = 1000;  // Number of calibration readings
+// IR Sensor Pins
+#define left A0
+#define center A1
+#define right A2
 
 // Motor Control Pins
-int enableLeft = 5;  
-int MotorLeft1 = 7;  // Motor pins for left motor
+int enableLeft = 5;
+int MotorLeft1 = 7;
 int MotorLeft2 = 2;
-int enableRight = 3; 
-int MotorRight1 = 9;  // Motor pins for right motor
+int enableRight = 3;
+int MotorRight1 = 9;
 int MotorRight2 = 4;
 
-// Button control for turning on/off robot or calibrating
+// Sensor values
+int leftVal, centerVal, rightVal;
+int avgWhite = 300;
+
+// Button control
 int buttonState = 0;
 int previousState = 0;
 unsigned long pressStartTime = 0;
-const long holdDuration = 3000;  // 3 seconds to detect a "Hold" press
-bool toggleState = false;  // Tracks whether the robot is ON or OFF
+const long holdDuration = 3000;
+bool toggleState = false;
 
-// Counters for tracking robot's behavior
-int lineCounter = 0;  // Tracks the number of times the line is passed
-int counter = 0;  // Tracks the last direction the robot was turning
+// Counters
+int lineCounter = 0;
+int counter = 0;
+bool inBlackArea = false;
 
-void setup() 
-{
-  Serial.begin(9600);  // Start serial communication for debugging
-
-  // Initialize motor pins as OUTPUT
+void setup() {
+  Serial.begin(9600);
   pinMode(enableLeft, OUTPUT);
   pinMode(MotorLeft1, OUTPUT);
   pinMode(MotorLeft2, OUTPUT);
   pinMode(enableRight, OUTPUT);
   pinMode(MotorRight1, OUTPUT);
   pinMode(MotorRight2, OUTPUT);
-
-  // Initialize IR sensor pins as INPUT
   pinMode(left, INPUT);
   pinMode(center, INPUT);
   pinMode(right, INPUT);
-
-  // Initialize button pin as INPUT
   pinMode(12, INPUT);
 }
 
-void loop() 
-{
-  // Read the IR sensors and store the values
+void loop() {
   leftVal = analogRead(left);
   centerVal = analogRead(center);
   rightVal = analogRead(right);
-  
-  // Print the sensor readings for debugging
-  Serial.print("Position: (");
-  Serial.print(leftVal);
-  Serial.print(", ");
-  Serial.print(centerVal);
-  Serial.print(", ");
-  Serial.print(rightVal);
-  Serial.print(") ");
 
-  // Button press detection logic
-  buttonState = digitalRead(12);  // Read the button state (HIGH or LOW)
-  if (buttonState == HIGH && previousState == LOW) {  
-    pressStartTime = millis();  // Record the time when button is pressed
+  buttonState = digitalRead(12);
+  if (buttonState == HIGH && previousState == LOW) {
+    pressStartTime = millis();
   }
-
-  // Button release detection logic
   if (buttonState == LOW && previousState == HIGH) {
     unsigned long pressDuration = millis() - pressStartTime;
     if (pressDuration >= holdDuration) {
-      calibrate_sensor();  // If button is held for 3 seconds, start calibration
+      calibrate_sensor();
     } else {
-      toggleState = !toggleState;  // Toggle ON/OFF state on short press
+      toggleState = !toggleState;
     }
   }
 
-  // Print ON/OFF based on the toggleState value
   if (toggleState) {
-    Serial.print("ON ");
-    
-    // First run: Move forward
-    if(lineCounter < 1) {
+    if (lineCounter == 5) {
       forward();
-      Serial.println("FORWARD");
-      delay(50);
-      lineCounter++;  // Increment lineCounter to prevent infinite first loop
+      Serial.println("FINAL FORWARD");
+      delay(500);
+      stop();
+      while (true) {}  // Halt
     }
-    else if(leftVal >= avgWhite && rightVal >= avgWhite && centerVal >= avgWhite) 
-    {
-      turn_around();  // Turn around if all sensors detect the white line
-      delay(100);  // Short delay to complete the turn
-      // Continue turning until left sensor no longer detects the line
-      while(leftVal <= avgWhite) {
-        turn_around();
-        Serial.println("TURN AROUND");
-        leftVal = analogRead(left);  // Update sensor values to check if we have passed the line
-        rightVal = analogRead(right);
-        centerVal = analogRead(center);
+
+    if (lineCounter < 1) {
+      forward();
+      Serial.println("FORWARD INIT");
+      delay(150);
+      lineCounter++;
+    } else if (leftVal >= avgWhite && centerVal >= avgWhite && rightVal >= avgWhite) {
+      if (!inBlackArea) {
+        lineCounter++;
+        inBlackArea = true;
+        Serial.print("Line Counter incremented to: ");
+        Serial.println(lineCounter);
       }
-      lineCounter++;  // Increment lineCounter after turning around
+      if (lineCounter < 5) {
+        turn_around();
+        delay(450);
+        while (analogRead(left) <= avgWhite) {
+          turn_around();
+        }
+      }
+    } else {
+      inBlackArea = false;
     }
-    
-    // Turn left if the left sensor detects white
-    if(leftVal >= avgWhite) {
+
+    if (leftVal >= avgWhite) {
       turn_left();
-      counter = 1;  // Remember the last direction
+      counter = 1;
       Serial.println("LEFT");
-    }
-    // Turn right if the right sensor detects white
-    else if(rightVal >= avgWhite) {
+    } else if (rightVal >= avgWhite) {
       turn_right();
       counter = 2;
       Serial.println("RIGHT");
-    }
-    else if (leftVal <= avgWhite && rightVal <= avgWhite && centerVal <= avgWhite) {
-      // Make sharp turns if robot goes off course (both left and right sensors are off)
-      if(counter == 1) {
+    } else if (leftVal <= avgWhite && rightVal <= avgWhite && centerVal <= avgWhite) {
+      if (counter == 1) {
         sharp_left();
         Serial.println("SHARP LEFT");
-      }
-      else if(counter == 2) {
+      } else if (counter == 2) {
         sharp_right();
         Serial.println("SHARP RIGHT");
+      } else {
+        forward();
+        Serial.println("FORWARD (default)");
       }
-      else if(counter == 0) {
-        forward();  // Move forward if no sensors detect the line
-        Serial.println("FORWARD");
-      }
+    } else {
+      forward();
+      counter = 0;
+      Serial.println("FORWARD (else)");
     }
-    else {
-      forward();  // Move forward if no specific conditions are met
-      counter = 0;  // Reset counter
-      Serial.println("FORWARD");
-    }
-  }
-  else {
-    stop();  // Stop the robot if the toggleState is OFF
+  } else {
+    stop();
   }
 
-  // Store the current button state for the next loop iteration
   previousState = buttonState;
-  Serial.println("");  // Add a newline for better readability in the Serial Monitor
+  Serial.println();
 }
 
-// Function to calibrate the sensors by averaging their readings
-void calibrate_sensor() 
-{
-  Serial.println("");
-  Serial.println("CALIBRATING...");  // Indicate that calibration is starting
-  avgSensorLeft = 0;
-  avgSensorCenter = 0;
-  avgSensorRight = 0;
-  int sensorReadings = calTime;  // Number of readings to average
+void calibrate_sensor() {
+  Serial.println("\nCALIBRATING...");
+  int avgSensorLeft = 0, avgSensorCenter = 0, avgSensorRight = 0;
+  int sensorReadings = 1000;
 
-  // Collect sensor data for calibration
   for (int i = 0; i < sensorReadings; i++) {
     avgSensorLeft += analogRead(left);
     avgSensorCenter += analogRead(center);
     avgSensorRight += analogRead(right);
   }
 
-  // Calculate the average white value for calibration
   avgWhite = (avgSensorLeft + avgSensorCenter + avgSensorRight) / (3 * sensorReadings);
-  
-  Serial.println("CALIBRATION COMPLETE ");
   Serial.print("Average White Value: ");
-  Serial.println(avgWhite);  // Print the calculated average white value for debugging
-
-  delay(10000);  // Wait 10 seconds for the user to adjust before moving on
+  Serial.println(avgWhite);
+  delay(100);
 }
 
-// Function to move forward
 void forward() {
-  analogWrite(enableLeft, 255);  // Set speed of left motor to max
-  analogWrite(enableRight, 255); // Set speed of right motor to max
+  analogWrite(enableLeft, 255);
+  analogWrite(enableRight, 255);
   digitalWrite(MotorLeft1, HIGH);
   digitalWrite(MotorRight1, HIGH);
   digitalWrite(MotorLeft2, LOW);
   digitalWrite(MotorRight2, LOW);
 }
 
-// Function to stop the robot
 void stop() {
   digitalWrite(MotorLeft1, LOW);
   digitalWrite(MotorRight1, LOW);
@@ -202,19 +163,17 @@ void stop() {
   digitalWrite(MotorRight2, LOW);
 }
 
-// Function to turn right
 void turn_right() {
   analogWrite(enableLeft, 255);
-  analogWrite(enableRight, 150);  // Slow down right motor to turn right
+  analogWrite(enableRight, 150);
   digitalWrite(MotorLeft1, HIGH);
   digitalWrite(MotorRight1, HIGH);
   digitalWrite(MotorLeft2, LOW);
   digitalWrite(MotorRight2, LOW);
 }
 
-// Function to turn left
 void turn_left() {
-  analogWrite(enableLeft, 150);  // Slow down left motor to turn left
+  analogWrite(enableLeft, 150);
   analogWrite(enableRight, 255);
   digitalWrite(MotorLeft1, HIGH);
   digitalWrite(MotorRight1, HIGH);
@@ -222,19 +181,17 @@ void turn_left() {
   digitalWrite(MotorRight2, LOW);
 }
 
-// Function to make a sharp right turn
 void sharp_right() {
   analogWrite(enableLeft, 255);
-  analogWrite(enableRight, 0);  // Stop the right motor for a sharp right turn
+  analogWrite(enableRight, 0);
   digitalWrite(MotorLeft1, HIGH);
   digitalWrite(MotorRight1, HIGH);
   digitalWrite(MotorLeft2, LOW);
   digitalWrite(MotorRight2, LOW);
 }
 
-// Function to make a sharp left turn
 void sharp_left() {
-  analogWrite(enableLeft, 0);  // Stop the left motor for a sharp left turn
+  analogWrite(enableLeft, 0);
   analogWrite(enableRight, 255);
   digitalWrite(MotorLeft1, HIGH);
   digitalWrite(MotorRight1, HIGH);
@@ -242,12 +199,11 @@ void sharp_left() {
   digitalWrite(MotorRight2, LOW);
 }
 
-// Function to make the robot turn around
 void turn_around() {
   analogWrite(enableLeft, 255);
-  analogWrite(enableRight, 255);  // Both motors move at full speed
-  digitalWrite(MotorLeft1, HIGH);
-  digitalWrite(MotorRight1, LOW);  // One motor moves forward, the other backward to turn the robot
-  digitalWrite(MotorLeft2, LOW);
-  digitalWrite(MotorRight2, HIGH);
+  analogWrite(enableRight, 255);
+  digitalWrite(MotorLeft1, LOW);
+  digitalWrite(MotorRight1, HIGH);
+  digitalWrite(MotorLeft2, HIGH);
+  digitalWrite(MotorRight2, LOW);
 }
