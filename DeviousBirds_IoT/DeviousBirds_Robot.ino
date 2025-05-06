@@ -17,7 +17,7 @@
 // CETA 2025 
 // Code from Devious Birds 
 // Made by Abir Khaund-Hazarika(a_beer), Aaron Chan, Minh Dang, Darvin Gutierrez 
-// Challenge 3: IoT 
+// Challenge 2: IoT 
 // Circuit diagram @ https://wokwi.com/projects/428782660635648001 
 // Using L293D motor driver with QRE1113 IR Sensors and HC-05 Distance Sensor
 
