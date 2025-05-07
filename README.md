@@ -38,7 +38,8 @@ Inside, you’ll find three `.ino` files for each challenge:
 |------------------------|-----------------------------------------|
 | **Main Board**         | Arduino Nano 33 IoT                     |
 | **Alternate Board**    | ESP32                                   |
-| **Ultrasonic Sensor**  | HC-SR04                                  |
+| **Motors**             | SG90 Servo Motors x2                    |
+| **Ultrasonic Sensor**  | HC-SR04                                 |
 | **IR Sensors**         | KY-026 Flame Sensor Module ×3           |
 | **Chassis**            | Custom 3D-printed *(QR code coming soon)* |
 
