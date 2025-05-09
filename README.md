@@ -1,7 +1,7 @@
-# 🤖 Devious Birds Arduino Projects – Team 3
+# 🤖 Devious Birds CETA Robot – Team 3
 
 ### Team Name: **Team 3** (we are *Devious Birds* in spirit)  
-### Competition Placement: **TBD**  
+### Competition Placement: **1st _(Running the Fairway & IoT)_, and 1st overall--go Northview!!**  
 📸 *Robot images and fun competition-day photos (especially of Aaron 😼) coming soon!*
 
 ---
